@@ -142,7 +142,7 @@
         .results-table tr:last-child td {
             border-bottom: none;
         }
-        .results-table .highlight-value { /* Renamed for general use */
+        .results-table .highlight-value {
             font-size: 1.2em;
             color: var(--table-cell-highlight-color);
             font-weight: bold;
@@ -329,6 +329,7 @@
 - Edit Suite: 50 Lux
 - Grading Suite: 25 Lux
 - Prod. Gallery/Dark Grading: 3 Lux
+(Perpendicular to the monitor surface)
                         </span>
                     </span>
                 </div>
@@ -366,6 +367,7 @@
 - Edit Suite: 10 cd/m²
 - Grading Suite: 5 cd/m²
 - Prod. Gallery/Dark Grading: 0.5 cd/m²
+(Perpendicular to the monitor surface)
                         </span>
                     </span>
                 </div>
@@ -429,6 +431,22 @@ Setting to 0 effectively disables black level lift.
                 <div class="input-field-container">
                     <input type="number" id="blackLevelNits" step="0.0001" min="0" value="0.0001">
                     <p class="info">Enter display's minimum black luminance. Default 0.0001 (Dolby Cinema). 0 to disable.</p>
+                </div>
+            </div>
+
+            <div class="input-group" style="margin-top: 15px;">
+                <div>
+                    <input type="checkbox" id="approximateQDOLEDBlack" style="vertical-align: middle; margin-right: 5px;">
+                    <label for="approximateQDOLEDBlack" style="display: inline; font-weight: normal;">Approximate QD-OLED Ambient Black Level (Experimental)</label>
+                    <span class="tooltip-container">
+                        <span class="tooltip-icon">?</span>
+                        <span class="tooltip-text">When checked, this approximates the ambient black level for some QD-OLED displays using the formula:
+Room Lux * (Panel Off-State Ambient Light Rejection Factor / 1000)
+Here, an estimated factor of 2.2 is used.
+This will override and disable the manual L<sub>B</sub> input.
+This option is only active when "Room Lux & Reflectivity" is selected for viewing environment.
+                        </span>
+                    </span>
                 </div>
             </div>
 
@@ -518,7 +536,7 @@ The 109% signal is (1019-64)/(940-64) for 10-bit narrow range.
         const KAPPA_HLG = 1.111;
         const L_AMB_REF_NITS_GAMMA = 5.0;
         const MU_HLG = 0.98;
-        const HLG_EXTENDED_RANGE_FACTOR = (1019.0 - 64.0) / (940.0 - 64.0); // Approx 1.0901826
+        const HLG_EXTENDED_RANGE_FACTOR = (1019.0 - 64.0) / (940.0 - 64.0);
 
         const envLuxRadio = document.getElementById('envLux');
         const envNitsRadio = document.getElementById('envNits');
@@ -535,6 +553,7 @@ The 109% signal is (1019-64)/(940-64) for 10-bit narrow range.
 
         const blackLevelInputGroupDiv = document.getElementById('blackLevelInputGroup');
         const blackLevelNitsInput = document.getElementById('blackLevelNits');
+        const approximateQDOLEDBlackCheckbox = document.getElementById('approximateQDOLEDBlack');
         const blackLevelLiftResultRow = document.getElementById('blackLevelLiftResultRow');
         const resultBlackLiftValue = document.getElementById('resultBlackLiftValue');
         const forceExtendedGammaCheckbox = document.getElementById('forceExtendedGamma');
@@ -543,7 +562,6 @@ The 109% signal is (1019-64)/(940-64) for 10-bit narrow range.
         const luminanceAt109Row = document.getElementById('luminanceAt109Row');
         const resultLuminanceAt109Td = document.getElementById('resultLuminanceAt109');
 
-
         const resultHLGSignalUsedTd = document.getElementById('resultHLGSignalUsed');
         const resultLAmbTd = document.getElementById('resultLAmb');
         const resultGammaOffsetTd = document.getElementById('resultGammaOffset');
@@ -551,10 +569,13 @@ The 109% signal is (1019-64)/(940-64) for 10-bit narrow range.
         const resultEffectiveGammaTd = document.getElementById('resultEffectiveGamma');
         const resultPaperWhiteTd = document.getElementById('resultPaperWhite');
 
+        let previousManualBlackLevelNits = blackLevelNitsInput.value;
+
         const allInputs = [
             roomLuxInput, reflectivityInput, ambientNitsInput,
             peakNitsInput, hlgSignalLevelInput, blackLevelNitsInput,
-            forceExtendedGammaCheckbox, showExtendedRangeLuminanceCheckbox
+            forceExtendedGammaCheckbox, showExtendedRangeLuminanceCheckbox,
+            approximateQDOLEDBlackCheckbox
         ];
 
         function openTab(evt, tabName) {
@@ -577,10 +598,17 @@ The 109% signal is (1019-64)/(940-64) for 10-bit narrow range.
                 luxInputsDiv.classList.remove('hidden');
                 luxReflectivityInputDiv.classList.remove('hidden');
                 nitsInputDiv.classList.add('hidden');
+                approximateQDOLEDBlackCheckbox.disabled = false;
             } else {
                 nitsInputDiv.classList.remove('hidden');
                 luxInputsDiv.classList.add('hidden');
                 luxReflectivityInputDiv.classList.add('hidden');
+                approximateQDOLEDBlackCheckbox.disabled = true;
+                if (approximateQDOLEDBlackCheckbox.checked) {
+                    approximateQDOLEDBlackCheckbox.checked = false;
+                    blackLevelNitsInput.disabled = false;
+                    blackLevelNitsInput.value = previousManualBlackLevelNits;
+                }
             }
             calculatePaperWhite();
         }
@@ -595,7 +623,21 @@ The 109% signal is (1019-64)/(940-64) for 10-bit narrow range.
         if (showExtendedRangeLuminanceCheckbox && luminanceAt109Row) {
             showExtendedRangeLuminanceCheckbox.addEventListener('change', function() {
                 luminanceAt109Row.classList.toggle('hidden', !this.checked);
-                calculatePaperWhite(); // Recalculate to show/hide the value if already computed
+                calculatePaperWhite();
+            });
+        }
+
+        if (approximateQDOLEDBlackCheckbox) {
+            approximateQDOLEDBlackCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    if (!blackLevelNitsInput.disabled) {
+                        previousManualBlackLevelNits = blackLevelNitsInput.value;
+                    }
+                } else {
+                    blackLevelNitsInput.disabled = false;
+                    blackLevelNitsInput.value = previousManualBlackLevelNits;
+                }
+                calculatePaperWhite();
             });
         }
 
@@ -627,6 +669,20 @@ The 109% signal is (1019-64)/(940-64) for 10-bit narrow range.
         function calculatePaperWhite() {
             clearMessagesAndHighlights();
             resultsSection.classList.add('hidden');
+
+            if (!approximateQDOLEDBlackCheckbox.disabled && approximateQDOLEDBlackCheckbox.checked) {
+                blackLevelNitsInput.disabled = true;
+                const roomLuxForQDLb = parseFloat(roomLuxInput.value);
+                if (!isNaN(roomLuxForQDLb) && roomLuxForQDLb >= 0) {
+                    const qdOledBlack = roomLuxForQDLb * 2.2 / 1000.0;
+                    blackLevelNitsInput.value = Math.max(0.0000001, qdOledBlack).toFixed(7);
+                } else {
+                    blackLevelNitsInput.value = "";
+                }
+            } else if (!approximateQDOLEDBlackCheckbox.disabled && !approximateQDOLEDBlackCheckbox.checked) {
+                 blackLevelNitsInput.disabled = false;
+            }
+
 
             let lAmbNits;
             const peakNits = parseFloat(peakNitsInput.value);
@@ -725,12 +781,14 @@ The 109% signal is (1019-64)/(940-64) for 10-bit narrow range.
                  blackLevelNitsInput.classList.add('input-error');
                  isValid = false;
             } else {
-                if (lBNits > 0 && peakNits > 0 && gammaEffective !== 0) {
+                if (lBNits > 0 && peakNits > 0 && gammaEffective !== 0 && isFinite(gammaEffective)) {
                     beta = Math.sqrt(3 * Math.pow(lBNits / peakNits, 1 / gammaEffective));
                     if (isNaN(beta) || !isFinite(beta)) beta = 0;
+                } else {
+                    beta = 0;
                 }
-                 if (lBNits >= 0.1) {
-                    addMessage("Warning: Black Level Luminance (L_B) is quite high (>= 0.1 cd/m²). This will significantly lift blacks.", "warning");
+                 if (lBNits >= 0.3 && peakNits > 0) {
+                    addMessage("Warning: Black Level Luminance (L_B) is quite high (>= 0.3 cd/m²). This will significantly lift blacks.", "warning");
                     blackLevelNitsInput.classList.add('input-warning');
                 }
             }
@@ -773,7 +831,6 @@ The 109% signal is (1019-64)/(940-64) for 10-bit narrow range.
                 luminanceAt109Row.classList.add('hidden');
             }
 
-
             resultsSection.classList.remove('hidden');
 
             if (peakNits < 400 && !forceExtended) {
@@ -802,6 +859,7 @@ The 109% signal is (1019-64)/(940-64) for 10-bit narrow range.
         });
 
         document.addEventListener('DOMContentLoaded', () => {
+            previousManualBlackLevelNits = blackLevelNitsInput.value;
             const activeTabButton = document.querySelector('.tab-button.active');
             if (activeTabButton) {
                 activeTabButton.click();
