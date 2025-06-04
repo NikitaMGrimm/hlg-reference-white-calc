@@ -6,7 +6,7 @@
     <title>HLG Paper White Calculator</title>
     <style>
         :root {
-            --primary-color: #4CAF50; 
+            --primary-color: #4CAF50;
             --secondary-color: #f4f4f4;
             --text-color: #333;
             --light-text-color: #666;
@@ -19,9 +19,11 @@
             --warning-color: #f0ad4e;
             --input-error-border: #d9534f;
             --input-warning-border: #ef634a;
-            --results-bg: #e6ffed; 
+            --results-bg: #e6ffed;
             --results-border: #c3e6cb;
             --results-strong-color: #155724;
+            --table-header-bg: #f9f9f9;
+            --table-cell-highlight-color: var(--primary-color);
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
@@ -73,7 +75,7 @@
             border-radius: 6px;
             box-sizing: border-box;
             font-size: 1em;
-            transition: border-color 0.3s;
+            transition: border-color 0.3s, box-shadow 0.3s;
         }
         input[type="number"].input-error, input[type="text"].input-error {
             border-color: var(--input-error-border) !important;
@@ -81,7 +83,7 @@
         }
         input[type="number"].input-warning, input[type="text"].input-warning {
             border-color: var(--input-warning-border) !important;
-            box-shadow: 0 0 0 0.2rem rgba(255, 0, 0, 0.25);
+            box-shadow: 0 0 0 0.2rem rgba(239, 99, 74, 0.25);
         }
         .radio-group {
             display: flex;
@@ -102,10 +104,8 @@
         }
         .results {
             margin-top: 25px;
-            padding: 20px;
-            background-color: var(--results-bg);
-            border: 1px solid var(--results-border);
             border-radius: 8px;
+            overflow: hidden;
         }
         .results h2 {
             margin-top: 0;
@@ -113,14 +113,39 @@
             text-align: center;
             font-size: 1.4em;
             color: var(--results-strong-color);
+            padding: 15px;
+            background-color: var(--results-bg);
+            border-bottom: 1px solid var(--results-border);
         }
-        .results p {
-            margin: 8px 0;
-            font-size: 1em;
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: var(--container-bg);
         }
-        .results strong {
-            color: var(--results-strong-color);
+        .results-table th, .results-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .results-table th {
+            background-color: var(--table-header-bg);
+            font-weight: 500;
+            color: #555;
+            width: 60%;
+        }
+        .results-table td {
             font-weight: 600;
+            color: var(--text-color);
+            font-feature-settings: "tnum";
+        }
+        .results-table tr:last-child th,
+        .results-table tr:last-child td {
+            border-bottom: none;
+        }
+        .results-table .highlight-value { /* Renamed for general use */
+            font-size: 1.2em;
+            color: var(--table-cell-highlight-color);
+            font-weight: bold;
         }
         .hidden {
             display: none !important;
@@ -129,9 +154,9 @@
             font-size: 0.85em;
             color: var(--light-text-color);
             margin-top: 5px;
-            margin-bottom: 15px; 
+            margin-bottom: 15px;
         }
-        .page-info { 
+        .page-info {
             font-size: 1em;
             color: var(--light-text-color);
             margin-bottom: 20px;
@@ -177,8 +202,8 @@
             border-bottom: 2px solid var(--primary-color);
         }
         .tab-button {
-            background-color: #e7e7e7; 
-            color: #555; 
+            background-color: #e7e7e7;
+            color: #555;
             float: left;
             border: 1px solid var(--border-color);
             border-bottom: none;
@@ -196,7 +221,7 @@
         }
         .tab-button.active {
             background-color: var(--primary-color);
-            color: var(--button-text-color); 
+            color: var(--button-text-color);
             border-color: var(--primary-color);
             font-weight: bold;
         }
@@ -236,13 +261,13 @@
             padding: 10px;
             position: absolute;
             z-index: 10;
-            bottom: 130%; 
+            bottom: 130%;
             left: 50%;
-            margin-left: -140px; 
+            margin-left: -140px;
             opacity: 0;
             transition: opacity 0.2s ease-in-out;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            white-space: pre-line; 
+            white-space: pre-line;
         }
         .tooltip-text::after {
             content: "";
@@ -262,10 +287,10 @@
             margin-bottom: 20px;
         }
         .input-group label {
-            margin-bottom: 3px; 
-            display: inline-block; 
+            margin-bottom: 3px;
+            display: inline-block;
         }
-        .input-field-container { 
+        .input-field-container {
             margin-top: 5px;
         }
     </style>
@@ -273,7 +298,7 @@
 <body>
     <div class="container">
         <h1>HLG Paper White Calculator</h1>
-        <p class="page-info">Calculate the recommended HLG diffuse white (paper white) luminance based on your display's peak brightness and viewing environment.</p>
+        <p class="page-info">Calculate HLG diffuse white (paper white) and extended range (109%) luminance based on display peak brightness and viewing environment.</p>
 
         <div class="tab-container">
             <button class="tab-button active" onclick="openTab(event, 'basicSettings')">Basic Settings</button>
@@ -352,15 +377,11 @@
             <h2>2. Display</h2>
             <div class="input-group">
                 <div>
-                    <label for="peakNits">Display Peak Luminance (cd/m² or nits)</label>
+                    <label for="peakNits">Display Peak Luminance (L<sub>W</sub> for 100% HLG Signal, cd/m²)</label>
                      <span class="tooltip-container">
                         <span class="tooltip-icon">?</span>
-                        <span class="tooltip-text">Sources for Peak Luminance:
-- Physical Measurement (Colorimeter/Spectro)
-- Windows HDR Calibration Tool
-- Display EDID / CTA-861 HDR Metadata
-- Manufacturer Specs (Website/Box)
-- Eye Estimation (less accurate)
+                        <span class="tooltip-text">Enter the luminance your display produces for a 100% HLG signal. This is the L<sub>W</sub> used for gamma calculations.
+For EBU R 167 "ext" modes (e.g., "1000ext"), this would be the nominal L<sub>W</sub> (e.g., 1000), not the extended peak.
                         </span>
                     </span>
                 </div>
@@ -388,33 +409,117 @@ Adjusting this changes the target brightness for diffuse white.
                      <p class="info">Default and ITU recommendation is 75%.</p>
                 </div>
             </div>
+
+            <div id="blackLevelInputGroup" class="input-group">
+                <div>
+                    <label for="blackLevelNits">Black Level Luminance (L<sub>B</sub>, cd/m²)</label>
+                    <span class="tooltip-container">
+                        <span class="tooltip-icon">?</span>
+                        <span class="tooltip-text">The measured or specified black level of your display.
+Common examples:
+- Dolby Cinema P3 PQ: 0.0001 cd/m²
+- High-end OLED: ~0.0005 to 0.001 cd/m²
+- Good LCD with FALD: ~0.005 to 0.02 cd/m²
+- Typical LCD: ~0.05 to 0.1 cd/m²
+ITU-R BT.2100 suggests using PLUGE (BT.814) to determine L<sub>B</sub>.
+Setting to 0 effectively disables black level lift.
+                        </span>
+                    </span>
+                </div>
+                <div class="input-field-container">
+                    <input type="number" id="blackLevelNits" step="0.0001" min="0" value="0.0001">
+                    <p class="info">Enter display's minimum black luminance. Default 0.0001 (Dolby Cinema). 0 to disable.</p>
+                </div>
+            </div>
+
+            <div class="input-group" style="margin-top: 15px;">
+                <div>
+                    <input type="checkbox" id="forceExtendedGamma" style="vertical-align: middle; margin-right: 5px;">
+                    <label for="forceExtendedGamma" style="display: inline; font-weight: normal;">Force Extended Gamma Formula Always</label>
+                    <span class="tooltip-container">
+                        <span class="tooltip-icon">?</span>
+                        <span class="tooltip-text">ITU-R BT.2100-3 Note 5f specifies a piecewise function for System Gamma based on Display Peak Luminance: one formula for the 400-2000 cd/m² range and an 'extended' formula for values outside this range.
+Enabling this option forces the continuous 'extended' formula (γ = 1.2 * κ^(log2(Lw/1000))) to be used across all peak luminance values. This will deviate from the strict ITU standard for the 400-2000 cd/m² range but provides a smoother, continuous curve.
+                        </span>
+                    </span>
+                </div>
+                <img id="extendedGammaComparisonImage" src="extended_gamma_formula_comparison.png" alt="Gamma Formula Comparison Plot" style="display: none; max-width: 100%; margin-top: 10px; border-radius: 4px; border: 1px solid var(--border-color);">
+            </div>
+
+            <div class="input-group" style="margin-top: 15px;">
+                <div>
+                    <input type="checkbox" id="showExtendedRangeLuminance" style="vertical-align: middle; margin-right: 5px;">
+                    <label for="showExtendedRangeLuminance" style="display: inline; font-weight: normal;">Show Calculated 109% HLG Signal Luminance</label>
+                    <span class="tooltip-container">
+                        <span class="tooltip-icon">?</span>
+                        <span class="tooltip-text">Calculates and displays the luminance produced by a 109% HLG signal level, based on the current L<sub>W</sub> (for 100% signal) and system gamma.
+This utilizes the "super-white" headroom defined in EBU R 103.
+The 109% signal is (1019-64)/(940-64) for 10-bit narrow range.
+                        </span>
+                    </span>
+                </div>
+            </div>
         </div>
 
         <div id="messageArea" class="message-area"></div>
 
         <div class="results hidden" id="resultsSection">
             <h2>Results</h2>
-            <p>Using HLG Paper White Signal: <strong id="resultHLGSignalUsed"></strong> %</p>
-            <p>Calculated Ambient Surround Luminance (L_amb): <strong id="resultLAmb"></strong> cd/m²</p>
-            <p>Environmental Gamma Offset: <strong id="resultGammaOffset"></strong></p>
-            <p>Display Base Gamma (for Peak Nits): <strong id="resultDisplayBaseGamma"></strong></p>
-            <p>Effective System Gamma: <strong id="resultEffectiveGamma"></strong></p>
-            <p style="font-size: 1.2em;">Recommended HLG Paper White: <strong id="resultPaperWhite" style="font-size: 1.3em;"></strong> <strong>cd/m²</strong></p>
+            <table class="results-table">
+                <tbody>
+                    <tr>
+                        <th>Using HLG Paper White Signal</th>
+                        <td id="resultHLGSignalUsed"></td>
+                    </tr>
+                    <tr>
+                        <th>Calculated Ambient Surround Luminance (L<sub>amb</sub>)</th>
+                        <td id="resultLAmb"></td>
+                    </tr>
+                    <tr id="blackLevelLiftResultRow">
+                        <th>Black Level Lift (β)</th>
+                        <td id="resultBlackLiftValue"></td>
+                    </tr>
+                    <tr>
+                        <th>Peak L<sub>W</sub> Adjusted Gamma (Base)</th>
+                        <td id="resultDisplayBaseGamma"></td>
+                    </tr>
+                    <tr>
+                        <th>Surround L<sub>S</sub> Gamma Offset Comp.</th>
+                        <td id="resultGammaOffset"></td>
+                    </tr>
+                    <tr>
+                        <th>Effective System Gamma</th>
+                        <td id="resultEffectiveGamma"></td>
+                    </tr>
+                    <tr id="luminanceAt109Row" class="hidden">
+                        <th>Luminance at 109% HLG Signal</th>
+                        <td id="resultLuminanceAt109" class="highlight-value"></td>
+                    </tr>
+                    <tr>
+                        <th>Recommended HLG Paper White (75% HLG)</th>
+                        <td id="resultPaperWhite" class="highlight-value"></td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
         <div class="footer">
-            <p>Formulas based on ITU-R BT.2100, BT.2390, and BT.2408.</p>
+            <p>Formulas based on ITU-R BT.2100, BT.2390, and BT.2408 & EBU R 167.</p>
             <p>This is a simplified tool for educational and estimation purposes. <a href="https://github.com/NikitaMGrimm/hlg-reference-white-calc/tree/main" target="_blank">View on GitHub</a></p>
         </div>
     </div>
 
     <script>
         const A_HLG = 0.17883277;
-        const B_HLG = 1.0 - 4.0 * A_HLG; 
+        const B_HLG = 1.0 - 4.0 * A_HLG;
         const C_HLG = 0.5 - A_HLG * Math.log(4 * A_HLG);
-        const LW_REF_NITS_GAMMA = 1000.0; 
+        const LW_REF_NITS_GAMMA = 1000.0;
         const GAMMA_REF_BASE_HLG = 1.2;
-        const L_AMB_REF_NITS_GAMMA = 5.0; 
+        const KAPPA_HLG = 1.111;
+        const L_AMB_REF_NITS_GAMMA = 5.0;
+        const MU_HLG = 0.98;
+        const HLG_EXTENDED_RANGE_FACTOR = (1019.0 - 64.0) / (940.0 - 64.0); // Approx 1.0901826
+
         const envLuxRadio = document.getElementById('envLux');
         const envNitsRadio = document.getElementById('envNits');
         const luxInputsDiv = document.getElementById('luxInputs');
@@ -427,7 +532,30 @@ Adjusting this changes the target brightness for diffuse white.
         const ambientNitsInput = document.getElementById('ambientNits');
         const peakNitsInput = document.getElementById('peakNits');
         const hlgSignalLevelInput = document.getElementById('hlgSignalLevel');
-        const allInputs = [roomLuxInput, reflectivityInput, ambientNitsInput, peakNitsInput, hlgSignalLevelInput];
+
+        const blackLevelInputGroupDiv = document.getElementById('blackLevelInputGroup');
+        const blackLevelNitsInput = document.getElementById('blackLevelNits');
+        const blackLevelLiftResultRow = document.getElementById('blackLevelLiftResultRow');
+        const resultBlackLiftValue = document.getElementById('resultBlackLiftValue');
+        const forceExtendedGammaCheckbox = document.getElementById('forceExtendedGamma');
+        const extendedGammaComparisonImage = document.getElementById('extendedGammaComparisonImage');
+        const showExtendedRangeLuminanceCheckbox = document.getElementById('showExtendedRangeLuminance');
+        const luminanceAt109Row = document.getElementById('luminanceAt109Row');
+        const resultLuminanceAt109Td = document.getElementById('resultLuminanceAt109');
+
+
+        const resultHLGSignalUsedTd = document.getElementById('resultHLGSignalUsed');
+        const resultLAmbTd = document.getElementById('resultLAmb');
+        const resultGammaOffsetTd = document.getElementById('resultGammaOffset');
+        const resultDisplayBaseGammaTd = document.getElementById('resultDisplayBaseGamma');
+        const resultEffectiveGammaTd = document.getElementById('resultEffectiveGamma');
+        const resultPaperWhiteTd = document.getElementById('resultPaperWhite');
+
+        const allInputs = [
+            roomLuxInput, reflectivityInput, ambientNitsInput,
+            peakNitsInput, hlgSignalLevelInput, blackLevelNitsInput,
+            forceExtendedGammaCheckbox, showExtendedRangeLuminanceCheckbox
+        ];
 
         function openTab(evt, tabName) {
             let i, tabcontent, tablinks;
@@ -454,11 +582,24 @@ Adjusting this changes the target brightness for diffuse white.
                 luxInputsDiv.classList.add('hidden');
                 luxReflectivityInputDiv.classList.add('hidden');
             }
-            calculatePaperWhite(); 
+            calculatePaperWhite();
         }
         envLuxRadio.addEventListener('change', toggleEnvInputType);
         envNitsRadio.addEventListener('change', toggleEnvInputType);
-        
+
+        if (forceExtendedGammaCheckbox && extendedGammaComparisonImage) {
+            forceExtendedGammaCheckbox.addEventListener('change', function() {
+                extendedGammaComparisonImage.style.display = this.checked ? 'block' : 'none';
+            });
+        }
+        if (showExtendedRangeLuminanceCheckbox && luminanceAt109Row) {
+            showExtendedRangeLuminanceCheckbox.addEventListener('change', function() {
+                luminanceAt109Row.classList.toggle('hidden', !this.checked);
+                calculatePaperWhite(); // Recalculate to show/hide the value if already computed
+            });
+        }
+
+
         function addMessage(text, type = 'error') {
             const messageDiv = document.createElement('div');
             messageDiv.classList.add('message', type);
@@ -469,7 +610,9 @@ Adjusting this changes the target brightness for diffuse white.
         function clearMessagesAndHighlights() {
             messageArea.innerHTML = '';
             allInputs.forEach(input => {
-                input.classList.remove('input-error', 'input-warning');
+                if (input) {
+                    input.classList.remove('input-error', 'input-warning');
+                }
             });
         }
 
@@ -483,7 +626,7 @@ Adjusting this changes the target brightness for diffuse white.
 
         function calculatePaperWhite() {
             clearMessagesAndHighlights();
-            resultsSection.classList.add('hidden'); 
+            resultsSection.classList.add('hidden');
 
             let lAmbNits;
             const peakNits = parseFloat(peakNitsInput.value);
@@ -500,8 +643,8 @@ Adjusting this changes the target brightness for diffuse white.
                 hlgSignalLevelInput.classList.add('input-error');
                 isValid = false;
             }
-            
-            const hlgSignalEPrime = hlgSignalPercent / 100.0;
+
+            const hlgSignalEPrimePaperWhite = hlgSignalPercent / 100.0;
 
             if (envLuxRadio.checked) {
                 const roomLux = parseFloat(roomLuxInput.value);
@@ -519,14 +662,14 @@ Adjusting this changes the target brightness for diffuse white.
                 if (isValid) {
                     lAmbNits = (roomLux === 0 && reflectivity === 0) ? 0.00001 : (roomLux * reflectivity) / Math.PI;
                     if (lAmbNits <=0) lAmbNits = 0.00001;
-                    document.getElementById('resultLAmb').textContent = lAmbNits.toFixed(3);
+                    resultLAmbTd.textContent = `${lAmbNits.toFixed(3)} cd/m²`;
 
-                    if (reflectivity < 0.01 && reflectivity >= 0) { 
-                        addMessage("Warning: Surround Reflectivity is very low (< 0.01), potentially affecting results negatively.", "warning");
+                    if (reflectivity < 0.01 && reflectivity >= 0) {
+                        addMessage("Warning: Surround Reflectivity is very low (< 0.01), potentially affecting calculations.", "warning");
                         reflectivityInput.classList.add('input-warning');
                     }
                     if (roomLux < 2 && roomLux >= 0) {
-                        addMessage("Warning: Room Illuminance is very low (< 2 Lux), potentially affecting results negatively.", "warning");
+                        addMessage("Warning: Room Illuminance is very low (< 2 Lux), potentially affecting calculations.", "warning");
                         roomLuxInput.classList.add('input-warning');
                     }
                 }
@@ -538,38 +681,112 @@ Adjusting this changes the target brightness for diffuse white.
                      isValid = false;
                 }
                 if (isValid) {
-                    document.getElementById('resultLAmb').textContent = `N/A (Directly Entered: ${lAmbNits.toFixed(2)})`;
-                    if (lAmbNits < 0.2 && lAmbNits > 0) { 
-                         addMessage("Warning: Ambient Surround Luminance is very low (< 0.2 nits), potentially affecting results negatively.", "warning");
+                    resultLAmbTd.textContent = `${lAmbNits.toFixed(2)} cd/m² (Directly Entered)`;
+                    if (lAmbNits < 0.2 && lAmbNits > 0) {
+                         addMessage("Warning: Ambient Surround Luminance is very low (< 0.2 nits), potentially affecting calculations.", "warning");
                          ambientNitsInput.classList.add('input-warning');
                     }
                 }
             }
-            if (isValid && lAmbNits <= 0) lAmbNits = 0.00001; 
+            if (isValid && lAmbNits <= 0) lAmbNits = 0.00001;
 
-            if (!isValid) return;
+            if (!isValid) {
+                resultPaperWhiteTd.textContent = "Error";
+                if (resultsSection.classList.contains('hidden')) resultsSection.classList.remove('hidden');
+                resultDisplayBaseGammaTd.textContent = "---";
+                resultGammaOffsetTd.textContent = "---";
+                resultEffectiveGammaTd.textContent = "---";
+                resultBlackLiftValue.textContent = "---";
+                resultLuminanceAt109Td.textContent = "---";
+                return;
+            }
 
-            const ES_PAPER_WHITE_DYNAMIC = getEsForHLGSignal(hlgSignalEPrime);
-            const gammaOffsetEnv = -0.076 * Math.log10(lAmbNits / L_AMB_REF_NITS_GAMMA);
-            const gammaDisplayBase = GAMMA_REF_BASE_HLG + 0.42 * Math.log10(peakNits / LW_REF_NITS_GAMMA);
-            const gammaEffective = gammaDisplayBase + gammaOffsetEnv;
-            const paperWhiteLum = peakNits * Math.pow(ES_PAPER_WHITE_DYNAMIC, gammaEffective);
+            let gammaDisplayBase;
+            const forceExtended = forceExtendedGammaCheckbox.checked;
 
-            document.getElementById('resultHLGSignalUsed').textContent = hlgSignalPercent.toFixed(0);
-            document.getElementById('resultGammaOffset').textContent = gammaOffsetEnv.toFixed(4);
-            document.getElementById('resultDisplayBaseGamma').textContent = gammaDisplayBase.toFixed(4);
-            document.getElementById('resultEffectiveGamma').textContent = gammaEffective.toFixed(4);
-            document.getElementById('resultPaperWhite').textContent = paperWhiteLum.toFixed(2);
+            if (!forceExtended && peakNits >= 400 && peakNits <= 2000) {
+                gammaDisplayBase = GAMMA_REF_BASE_HLG + 0.42 * Math.log10(peakNits / LW_REF_NITS_GAMMA);
+            } else {
+                gammaDisplayBase = GAMMA_REF_BASE_HLG * Math.pow(KAPPA_HLG, Math.log2(peakNits / LW_REF_NITS_GAMMA));
+            }
+
+            const muFactor = Math.pow(MU_HLG, Math.log2(lAmbNits / L_AMB_REF_NITS_GAMMA));
+            const gammaEffective = gammaDisplayBase * muFactor;
+
+            let beta = 0;
+            const lBNits = parseFloat(blackLevelNitsInput.value);
+
+            if (isNaN(lBNits) || lBNits < 0) {
+                addMessage("Black Level Luminance (L_B) must be a non-negative number.");
+                blackLevelNitsInput.classList.add('input-error');
+                isValid = false;
+            } else if (lBNits > peakNits) {
+                 addMessage("Black Level Luminance (L_B) cannot be greater than Display Peak Luminance.");
+                 blackLevelNitsInput.classList.add('input-error');
+                 isValid = false;
+            } else {
+                if (lBNits > 0 && peakNits > 0 && gammaEffective !== 0) {
+                    beta = Math.sqrt(3 * Math.pow(lBNits / peakNits, 1 / gammaEffective));
+                    if (isNaN(beta) || !isFinite(beta)) beta = 0;
+                }
+                 if (lBNits >= 0.1) {
+                    addMessage("Warning: Black Level Luminance (L_B) is quite high (>= 0.1 cd/m²). This will significantly lift blacks.", "warning");
+                    blackLevelNitsInput.classList.add('input-warning');
+                }
+            }
+            resultBlackLiftValue.textContent = beta.toFixed(6);
+
+            if (!isValid) {
+                resultPaperWhiteTd.textContent = "Error";
+                resultDisplayBaseGammaTd.textContent = gammaDisplayBase.toFixed(4);
+                resultGammaOffsetTd.textContent = (gammaEffective - gammaDisplayBase).toFixed(4);
+                resultEffectiveGammaTd.textContent = gammaEffective.toFixed(4);
+                resultLuminanceAt109Td.textContent = "Error";
+                resultsSection.classList.remove('hidden');
+                return;
+            }
+
+            let ePrimeForPaperWhite = hlgSignalEPrimePaperWhite;
+            if (beta > 0) {
+                ePrimeForPaperWhite = Math.max(0, (1 - beta) * hlgSignalEPrimePaperWhite + beta);
+            }
+            const EsPaperWhite = getEsForHLGSignal(ePrimeForPaperWhite);
+            const paperWhiteLum = peakNits * Math.pow(EsPaperWhite, gammaEffective);
+
+            resultHLGSignalUsedTd.textContent = `${hlgSignalPercent.toFixed(0)} %`;
+            const surroundOffsetComponentDisplay = gammaEffective - gammaDisplayBase;
+            resultGammaOffsetTd.textContent = surroundOffsetComponentDisplay.toFixed(4);
+            resultDisplayBaseGammaTd.textContent = gammaDisplayBase.toFixed(4);
+            resultEffectiveGammaTd.textContent = gammaEffective.toFixed(4);
+            resultPaperWhiteTd.textContent = `${paperWhiteLum.toFixed(2)} cd/m²`;
+
+            if (showExtendedRangeLuminanceCheckbox.checked) {
+                let ePrimeFor109 = HLG_EXTENDED_RANGE_FACTOR;
+                if (beta > 0) {
+                    ePrimeFor109 = Math.max(0, (1 - beta) * HLG_EXTENDED_RANGE_FACTOR + beta);
+                }
+                const Es109 = getEsForHLGSignal(ePrimeFor109);
+                const luminance109 = peakNits * Math.pow(Es109, gammaEffective);
+                resultLuminanceAt109Td.textContent = `${luminance109.toFixed(2)} cd/m²`;
+                luminanceAt109Row.classList.remove('hidden');
+            } else {
+                luminanceAt109Row.classList.add('hidden');
+            }
+
 
             resultsSection.classList.remove('hidden');
 
-            if (peakNits < 400) {
-                addMessage("Warning: Display Peak Luminance is below 400 cd/m². True HDR often requires higher peak brightness (e.g., VESA DisplayHDR 400 is a minimum certification).", "warning");
-                peakNitsInput.classList.add('input-warning');
+            if (peakNits < 400 && !forceExtended) {
+                addMessage("Warning: Display Peak Luminance is below 400 cd/m². The ITU-R BT.2100-3 Note 5f uses the 'extended' gamma formula for this range. Results are using this extended formula.", "warning");
+                 if(!peakNitsInput.classList.contains('input-warning')) peakNitsInput.classList.add('input-warning');
+            } else if (peakNits > 2000 && !forceExtended) {
+                 addMessage("Warning: Display Peak Luminance is above 2000 cd/m². The ITU-R BT.2100-3 Note 5f uses the 'extended' gamma formula for this range. Results are using this extended formula.", "warning");
+                 if(!peakNitsInput.classList.contains('input-warning')) peakNitsInput.classList.add('input-warning');
             }
-            if (paperWhiteLum < 80) {
-                addMessage(`Warning: Calculated Paper White (${paperWhiteLum.toFixed(1)} cd/m²) is below the typical sRGB diffuse white of ~80 cd/m². HDR not recommended.`, "warning");
-                if(!peakNitsInput.classList.contains('input-warning')) peakNitsInput.classList.add('input-warning');
+
+            if (paperWhiteLum < 80 && isValid) {
+                addMessage(`Warning: Calculated Paper White (${paperWhiteLum.toFixed(1)} cd/m²) is below the typical sRGB diffuse white of ~80 cd/m². Consider if HDR viewing is optimal.`, "warning");
+                if(!peakNitsInput.classList.contains('input-warning') && !peakNitsInput.classList.contains('input-error')) peakNitsInput.classList.add('input-warning');
             }
             if (hlgSignalPercent !== 75) {
                 addMessage("Warning: HLG Paper White Signal Level is not 75%. The ITU-R BT.2408-7 recommendation is 75% for diffuse white in HLG.", "warning");
@@ -578,13 +795,27 @@ Adjusting this changes the target brightness for diffuse white.
         }
 
         allInputs.forEach(input => {
-            input.addEventListener('input', calculatePaperWhite);
-            input.addEventListener('change', calculatePaperWhite);
+            if (input) {
+                input.addEventListener('input', calculatePaperWhite);
+                input.addEventListener('change', calculatePaperWhite);
+            }
         });
-        
+
         document.addEventListener('DOMContentLoaded', () => {
-            toggleEnvInputType(); 
-            calculatePaperWhite(); 
+            const activeTabButton = document.querySelector('.tab-button.active');
+            if (activeTabButton) {
+                activeTabButton.click();
+            }
+            toggleEnvInputType();
+            if (forceExtendedGammaCheckbox && extendedGammaComparisonImage) {
+                 extendedGammaComparisonImage.style.display = forceExtendedGammaCheckbox.checked ? 'block' : 'none';
+            }
+            if (showExtendedRangeLuminanceCheckbox && luminanceAt109Row) {
+                luminanceAt109Row.classList.toggle('hidden', !showExtendedRangeLuminanceCheckbox.checked);
+            }
+
+            blackLevelLiftResultRow.classList.remove('hidden');
+            calculatePaperWhite();
         });
     </script>
 </body>
