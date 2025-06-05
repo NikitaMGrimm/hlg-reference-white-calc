@@ -265,9 +265,14 @@
             left: 50%;
             margin-left: -140px;
             opacity: 0;
-            transition: opacity 0.2s ease-in-out;
+            transition: opacity 0.2s ease-in-out, visibility 0s linear 0.2s;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             white-space: pre-line;
+        }
+        .tooltip-text.show {
+            visibility: visible;
+            opacity: 1;
+            transition: opacity 0.2s ease-in-out;
         }
         .tooltip-text::after {
             content: "";
@@ -278,10 +283,6 @@
             border-width: 6px;
             border-style: solid;
             border-color: var(--tooltip-bg) transparent transparent transparent;
-        }
-        .tooltip-container:hover .tooltip-text {
-            visibility: visible;
-            opacity: 1;
         }
         .input-group {
             margin-bottom: 20px;
@@ -880,6 +881,46 @@ The 109% signal is (1019-64)/(940-64) for 10-bit narrow range.
             }
 
             blackLevelLiftResultRow.classList.remove('hidden');
+
+            const tooltipContainers = document.querySelectorAll('.tooltip-container');
+            tooltipContainers.forEach(container => {
+                const tooltipText = container.querySelector('.tooltip-text');
+                if (!tooltipText) return;
+
+                let clickTimerId = null;
+                let isClickActive = false;
+                let isMouseOver = false;
+
+                container.addEventListener('mouseenter', () => {
+                    isMouseOver = true;
+                    tooltipText.classList.add('show');
+                });
+
+                container.addEventListener('mouseleave', () => {
+                    isMouseOver = false;
+                    if (!isClickActive) {
+                        tooltipText.classList.remove('show');
+                    }
+                });
+
+                container.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    
+                    clearTimeout(clickTimerId);
+
+                    isClickActive = true; 
+                    tooltipText.classList.add('show'); 
+
+                    clickTimerId = setTimeout(() => {
+                        isClickActive = false; 
+                        if (!isMouseOver) { 
+                            tooltipText.classList.remove('show'); 
+                        }
+                        clickTimerId = null;
+                    }, 2000);
+                });
+            });
+            
             calculatePaperWhite();
         });
     </script>
