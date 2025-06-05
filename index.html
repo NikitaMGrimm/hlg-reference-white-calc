@@ -450,10 +450,13 @@ Setting to 0 effectively disables black level lift.
                         <span class="tooltip-icon">?</span>
                         <span class="tooltip-text">When checked, this approximates the ambient black level for some QD-OLED displays using the formula:
 Room Lux * ((rejection per 1000 Lux) / 1000)
-2.2 nits / 1000 lux of room illuminance for QD-OLED displays, 
+
+Reasoning:
+(2.2 nits black floor ) / (1000 lux of room illuminance) for QD-OLED.
 minus 0.2 nits / 1000 lux for other displays, to compensate for bias,
 as I don't think ambient black level raise has been used in the ITU formulas.
 This will override and disable the manual L<sub>B</sub> input.
+I do not know if this adjustment will result in more accurate results.
 This option is only active when "Room Lux & Reflectivity" is selected for viewing environment.
                         </span>
                     </span>
