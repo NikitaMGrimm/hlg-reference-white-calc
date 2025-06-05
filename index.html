@@ -449,8 +449,10 @@ Setting to 0 effectively disables black level lift.
                     <span class="tooltip-container">
                         <span class="tooltip-icon">?</span>
                         <span class="tooltip-text">When checked, this approximates the ambient black level for some QD-OLED displays using the formula:
-Room Lux * (Panel Off-State Ambient Light Rejection Factor / 1000)
-Here, an estimated factor of 2.2 is used.
+Room Lux * ((rejection per 1000 Lux) / 1000)
+2.2 nits / 1000 lux of room illuminance for QD-OLED displays, 
+minus 0.2 nits / 1000 lux for other displays, to compensate for bias,
+as I don't think ambient black level raise has been used in the ITU formulas.
 This will override and disable the manual L<sub>B</sub> input.
 This option is only active when "Room Lux & Reflectivity" is selected for viewing environment.
                         </span>
@@ -682,8 +684,8 @@ The 109% signal is (1019-64)/(940-64) for 10-bit narrow range.
                 blackLevelNitsInput.disabled = true;
                 const roomLuxForQDLb = parseFloat(roomLuxInput.value);
                 if (!isNaN(roomLuxForQDLb) && roomLuxForQDLb >= 0) {
-                    const qdOledBlack = roomLuxForQDLb * 2.2 / 1000.0;
-                    blackLevelNitsInput.value = Math.max(0.0000001, qdOledBlack).toFixed(7);
+                    const qdOledBlack = roomLuxForQDLb * (2.2 - 0.2) / 1000.0;
+                    blackLevelNitsInput.value = Math.max(0.0001, qdOledBlack).toFixed(7);
                 } else {
                     blackLevelNitsInput.value = "";
                 }
